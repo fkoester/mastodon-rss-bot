@@ -1,4 +1,4 @@
-import os.path
+import os
 import sys
 import re
 
@@ -18,9 +18,9 @@ import dynamic_tags
 
 from fake_useragent import UserAgent
 
-sql = sqlite3.connect('cache.db')
+sql = sqlite3.connect('/data/cache.db')
 db = sql.cursor()
-db.execute('''CREATE TABLE IF NOT EXISTS entries (feed_entry_id text, toot_id text, rss_feed_url text, mastodon_username text, mastodon_instance text)''')
+db.execute('''CREATE TABLE IF NOT EXISTS entries (feed_entry_id text, toot_id text, rss_feed_url text, mastodon_instance text)''')
 
 include_author = False
 include_link = True
@@ -29,13 +29,13 @@ use_privacy_frontends = True
 use_shortlink = True
 maximum_toots_count = 1
 
-rss_feed_url = sys.argv[1]
-mastodon_instance = sys.argv[2]
-mastodon_username = sys.argv[3]
-mastodon_email_address = sys.argv[4].lower()
-mastodon_password = base64.b64decode(sys.argv[5]).decode("utf-8")
-tags_to_add = sys.argv[6]
-days_to_check = int(sys.argv[7])
+rss_feed_url = os.environ['RSS_FEED_URL']
+mastodon_instance = os.environ['MASTODON_INSTANCE']
+tags_to_add = os.environ['TAGS_TO_ADD']
+days_to_check = int(os.environ['DAYS_TO_CHECK'])
+client_id = os.environ['CLIENT_ID']
+client_secret = os.environ['CLIENT_SECRET']
+access_token = os.environ['ACCESS_TOKEN']
 
 rss_feed_domain = re.sub('^[a-z]*://', '', rss_feed_url)
 rss_feed_domain = re.sub('/.*$', '', rss_feed_domain)
@@ -68,30 +68,15 @@ def determine_content_language(text):
 
     return language
 
-if not os.path.isfile("app_" + mastodon_instance + '.secret'):
-    if Mastodon.create_app(
-        rss_feed_domain,
-        api_base_url = 'https://' + mastodon_instance,
-        to_file = "app_" + mastodon_instance + '.secret'
-    ):
-        print('Successfully created the application on instance ' + mastodon_instance)
-    else:
-        print('Failed to create the application on instance ' + mastodon_instance)
-        sys.exit(1)
-
 try:
     mastodon_api = Mastodon(
-        client_id = "app_" + mastodon_instance + '.secret',
+        client_id = client_id,
+        client_secret = client_secret,
+        access_token = access_token,
         api_base_url = 'https://' + mastodon_instance
     )
-    mastodon_api.log_in(
-        mastodon_email_address,
-        password = mastodon_password,
-        scopes = ['read', 'write'],
-        to_file = "app_" + mastodon_username + "@" + mastodon_instance + ".secret"
-    )
 except:
-    print("ERROR: Failed to log " + mastodon_username + " into " + mastodon_instance)
+    print("ERROR: Failed to log into " + mastodon_instance)
     sys.exit(1)
 
 feed = feedparser.parse(rss_feed_url)
@@ -114,8 +99,8 @@ for feed_entry in reversed(feed.entries):
     print('Entry found: ' + feed_entry_id)
 
     db.execute(
-        'SELECT * FROM entries WHERE feed_entry_id = ? AND mastodon_username = ? AND mastodon_instance = ?',
-        (feed_entry_id, mastodon_username, mastodon_instance))
+        'SELECT * FROM entries WHERE feed_entry_id = ? AND mastodon_instance = ?',
+        (feed_entry_id, mastodon_instance))
     last = db.fetchone()
 
     if 'published_parsed' in feed_entry:
@@ -223,8 +208,9 @@ for feed_entry in reversed(feed.entries):
                     mime_type = media.headers.get('content-type'))
                 toot_media.append(media_posted['id'])
                 media_urls_posted.append(media_url)
-            except:
+            except Exception as e:
                 print('   > FAILURE!')
+                print(e)
 
         for link in feed_entry.links:
             if 'image' in link.type:
@@ -303,8 +289,8 @@ for feed_entry in reversed(feed.entries):
                 language = toot_language)
 
             if "id" in toot:
-                db.execute("INSERT INTO entries VALUES ( ? , ? , ? , ? , ? )",
-                        (feed_entry_id, toot["id"], rss_feed_url, mastodon_username, mastodon_instance))
+                db.execute("INSERT INTO entries VALUES ( ? , ? , ? , ? )",
+                        (feed_entry_id, toot["id"], rss_feed_url, mastodon_instance))
                 sql.commit()
 
         toots_count += 1
