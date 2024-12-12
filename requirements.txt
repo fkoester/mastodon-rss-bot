@@ -2,3 +2,5 @@ feedparser
 Mastodon.py
 requests
 bs4
+fake_useragent
+lxml
