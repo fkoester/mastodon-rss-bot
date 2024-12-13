@@ -24,7 +24,7 @@ db.execute('''CREATE TABLE IF NOT EXISTS entries (feed_entry_id text, toot_id te
 
 include_author = False
 include_link = True
-include_link_thumbnail = True
+include_link_thumbnail = os.environ.get('INCLUDE_LINK_THUMBNAIL') != 'FALSE'
 use_privacy_frontends = True
 use_shortlink = True
 maximum_toots_count = 1
