@@ -26,6 +26,7 @@ include_author = False
 include_link = True
 include_link_thumbnail = os.environ.get('INCLUDE_LINK_THUMBNAIL') != 'FALSE'
 include_images = os.environ.get('INCLUDE_IMAGES') != 'FALSE'
+include_description = os.environ.get('INCLUDE_DESCRIPTION') == 'TRUE'
 use_privacy_frontends = True
 use_shortlink = True
 maximum_toots_count = 1
@@ -240,6 +241,9 @@ for feed_entry in reversed(feed.entries):
                     media_urls_posted.append(link.href)
                 except:
                     print(' > Could not upload to Mastodon!')
+
+        if include_description and len(feed_entry.description) > 0:
+            toot_body += '\n\n' + feed_entry.description
 
         if include_link:
             feed_entry_link = feed_entry.link
