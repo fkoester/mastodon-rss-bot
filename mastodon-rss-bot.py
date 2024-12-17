@@ -29,7 +29,7 @@ include_images = os.environ.get('INCLUDE_IMAGES') != 'FALSE'
 include_description = os.environ.get('INCLUDE_DESCRIPTION') == 'TRUE'
 use_privacy_frontends = True
 use_shortlink = True
-maximum_toots_count = 1
+maximum_toots_count = int(os.environ.get('MAXIMUM_TOOTS_COUNT', '1'))
 
 rss_feed_url = os.environ['RSS_FEED_URL']
 mastodon_instance = os.environ['MASTODON_INSTANCE']
