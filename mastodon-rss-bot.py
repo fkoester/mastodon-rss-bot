@@ -25,6 +25,7 @@ db.execute('''CREATE TABLE IF NOT EXISTS entries (feed_entry_id text, toot_id te
 include_author = False
 include_link = True
 include_link_thumbnail = os.environ.get('INCLUDE_LINK_THUMBNAIL') != 'FALSE'
+include_images = os.environ.get('INCLUDE_IMAGES') != 'FALSE'
 use_privacy_frontends = True
 use_shortlink = True
 maximum_toots_count = 1
@@ -36,6 +37,7 @@ days_to_check = int(os.environ['DAYS_TO_CHECK'])
 client_id = os.environ['CLIENT_ID']
 client_secret = os.environ['CLIENT_SECRET']
 access_token = os.environ['ACCESS_TOKEN']
+ignore_images = os.environ.get('IGNORE_IMAGES', '')
 
 rss_feed_domain = re.sub('^[a-z]*://', '', rss_feed_url)
 rss_feed_domain = re.sub('/.*$', '', rss_feed_domain)
@@ -197,6 +199,12 @@ for feed_entry in reversed(feed.entries):
         for media_url in media_urls:
             if media_url is None or media_url == 'None' or media_urls_posted.count(media_url) > 0:
                 continue
+
+            if not include_images:
+                continue
+
+            if media_url in ignore_images.split(' '):
+                continue
                 
             try:
                 print (' > Uploading media to Mastodon: ' + media_url)
@@ -214,7 +222,13 @@ for feed_entry in reversed(feed.entries):
 
         for link in feed_entry.links:
             if 'image' in link.type:
+                if not include_images:
+                    continue
+
                 if media_urls_posted.count(link.href) > 0:
+                    continue
+
+                if link.href in ignore_images.split(' '):
                     continue
                     
                 try:
