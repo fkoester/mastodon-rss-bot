@@ -27,6 +27,7 @@ include_link = True
 include_link_thumbnail = os.environ.get('INCLUDE_LINK_THUMBNAIL') != 'FALSE'
 include_images = os.environ.get('INCLUDE_IMAGES') != 'FALSE'
 include_description = os.environ.get('INCLUDE_DESCRIPTION') == 'TRUE'
+toot_language = os.environ.get('LANGUAGE', 'de')
 use_privacy_frontends = True
 use_shortlink = True
 maximum_toots_count = int(os.environ.get('MAXIMUM_TOOTS_COUNT', '1'))
@@ -42,34 +43,6 @@ ignore_images = os.environ.get('IGNORE_IMAGES', '')
 
 rss_feed_domain = re.sub('^[a-z]*://', '', rss_feed_url)
 rss_feed_domain = re.sub('/.*$', '', rss_feed_domain)
-
-def determine_content_language(text):
-    language = 'en'
-
-    if ('ă' in text or 'â' in text or 'î' in text or 'ș' in text or 'ț' in text):
-        language = 'ro'
-    else:
-        language = 'en'
-
-    if language != 'en':
-        if (' and ' in text or
-            ' its ' in text or
-            ' of ' in text or
-            ' the ' in text or
-            ' was ' in text):
-            language = 'en'
-
-    if language != 'ro':
-        if (' de la ' in text or
-            ' miliarde ' in text):
-            language = 'ro'
-
-    if (' al patrulea ' in text or
-        'mbasadorul' in text or
-        'interzis' in text):
-        language = 'ro'
-
-    return language
 
 try:
     mastodon_api = Mastodon(
@@ -165,7 +138,6 @@ for feed_entry in reversed(feed.entries):
             print(' > The title is missing!')
             raise ValueError('The title is missing')
 
-        toot_language = determine_content_language(feed_entry_title)
         toot_body = text_replacements.apply(feed_entry_title, toot_language)
 
         media_urls = []
